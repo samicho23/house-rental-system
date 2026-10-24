@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+db
+docs
+postman
+tests
+*.log
+.git
+.github

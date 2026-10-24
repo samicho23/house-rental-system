@@ -1,0 +1,16 @@
+# Development compose - starts only the API (the Next.js frontend runs with bun/npm)
+services:
+  api:
+    build: .
+    container_name: faydarent-api
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: file:../db/custom.db
+      JWT_SECRET: ${JWT_SECRET:-rental-system-dev-secret-change-in-production}
+      CORS_ORIGIN: "*"
+    volumes:
+      - ./db:/app/db
+    restart: unless-stopped

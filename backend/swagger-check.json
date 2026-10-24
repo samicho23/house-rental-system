@@ -1,0 +1,483 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "FaydaRent Backend API",
+    "version": "1.0.0",
+    "description": "OpenAPI contract used to validate the FaydaRent REST API."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    { "name": "Health" },
+    { "name": "Authentication" },
+    { "name": "Properties" },
+    { "name": "Applications" },
+    { "name": "Leases" },
+    { "name": "Payments" },
+    { "name": "Maintenance" },
+    { "name": "Notifications" },
+    { "name": "Dashboard" },
+    { "name": "Admin" },
+    { "name": "Audit" },
+    { "name": "Public" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "hrs_session",
+        "description": "HTTP-only session cookie returned by the login endpoint."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string", "example": "You must be signed in" }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "ok" },
+          "service": { "type": "string", "example": "faydarent-backend" },
+          "database": { "type": "string", "example": "up" },
+          "env": { "type": "string", "example": "development" },
+          "uptimeSeconds": { "type": "integer", "example": 120 },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AuditLog": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "cmaudit123" },
+          "actorId": { "type": "string", "nullable": true },
+          "action": { "type": "string", "example": "PROPERTY_APPROVED" },
+          "entity": { "type": "string", "example": "Property" },
+          "entityId": { "type": "string", "nullable": true },
+          "metadata": { "type": "string", "nullable": true },
+          "ipAddress": { "type": "string", "nullable": true },
+          "userAgent": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Check service and database health",
+        "tags": ["Health"],
+        "responses": {
+          "200": {
+            "description": "Service health",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Health" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Log in and set the session cookie",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "format": "password" }
+                }
+              }
+            }
+          }
+        },
+        "/api/fayda/verify": {
+          "post": {
+            "summary": "Verify a Fayda identification number",
+            "tags": ["Authentication"],
+            "requestBody": {
+              "required": true,
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "required": ["fin", "consent"],
+                    "properties": {
+                      "fin": { "type": "string", "minLength": 6, "example": "AB1234567" },
+                      "consent": { "type": "boolean", "enum": [true], "example": true }
+                    }
+                  }
+                }
+              }
+            },
+            "/api/authorizations/me": {
+              "get": {
+                "summary": "Get current user permissions",
+                "tags": ["Authentication"],
+                "security": [{ "cookieAuth": [] }],
+                "responses": { "200": { "description": "Role and permissions" } }
+              }
+            },
+            "/api/verification/fayda": {
+              "post": {
+                "summary": "Verify Fayda identity details",
+                "tags": ["Authentication"],
+                "responses": { "200": { "description": "Verified Fayda identity details" } }
+              }
+            },
+            "/api/verification/status": {
+              "get": {
+                "summary": "Get current user verification status",
+                "tags": ["Authentication"],
+                "security": [{ "cookieAuth": [] }],
+                "responses": { "200": { "description": "Verification status" } }
+              }
+            },
+            "responses": {
+              "200": { "description": "Fayda claims and account status" },
+              "400": { "description": "Invalid FIN or missing consent" },
+              "401": { "description": "Fayda verification failed" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Authenticated; sets hrs_session cookie" },
+          "400": {
+            "description": "Invalid credentials or request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "summary": "Clear the session cookie",
+        "tags": ["Authentication"],
+        "responses": { "200": { "description": "Logged out" } }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "summary": "Get the current account",
+        "tags": ["Authentication"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Current account" } }
+      }
+    },
+    "/api/properties": {
+      "get": {
+        "summary": "Search property listings",
+        "tags": ["Properties"],
+        "responses": { "200": { "description": "Property list" } }
+      },
+      "post": {
+        "summary": "Create a property listing",
+        "tags": ["Properties"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "201": { "description": "Property created" } }
+      }
+    },
+    "/api/applications": {
+      "get": {
+        "summary": "List rental applications",
+        "tags": ["Applications"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Application list" } }
+      },
+      "post": {
+        "summary": "Submit a rental application",
+        "tags": ["Applications"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "201": { "description": "Application created" } }
+      }
+    },
+    "/api/leases": {
+      "get": {
+        "summary": "List leases for the current role",
+        "tags": ["Leases"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Lease list" } }
+      }
+    },
+    "/api/payments": {
+      "get": {
+        "summary": "List lease payments",
+        "tags": ["Payments"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Payment list" } }
+      },
+      "post": {
+        "summary": "Record a payment",
+        "tags": ["Payments"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "201": { "description": "Payment recorded" } }
+      }
+    },
+    "/api/maintenance": {
+      "get": {
+        "summary": "List maintenance requests",
+        "tags": ["Maintenance"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Maintenance request list" } }
+      },
+      "post": {
+        "summary": "Create a maintenance request",
+        "tags": ["Maintenance"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "201": { "description": "Maintenance request created" } }
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "summary": "List notifications",
+        "tags": ["Notifications"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Notification list" } }
+      }
+    },
+    "/api/dashboard": {
+      "get": {
+        "summary": "Get the role-aware dashboard",
+        "tags": ["Dashboard"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Dashboard data" } }
+      }
+    },
+    "/api/admin/reports": {
+      "get": {
+        "summary": "Get administrator reports",
+        "tags": ["Admin"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "Administrator reports" } }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "summary": "List users",
+        "tags": ["Admin"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "User list" } }
+      },
+      "put": {
+        "summary": "Update a user account",
+        "tags": ["Admin"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": { "200": { "description": "User updated" } }
+      }
+    },
+    "/api/admin/audit": {
+      "get": {
+        "summary": "List audit events",
+        "tags": ["Audit"],
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "action", "in": "query", "schema": { "type": "string" } },
+          { "name": "entity", "in": "query", "schema": { "type": "string" } },
+          { "name": "actorId", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 25 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated audit events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/AuditLog" }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": { "type": "integer" },
+                        "pageSize": { "type": "integer" },
+                        "total": { "type": "integer" },
+                        "totalPages": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/stats": {
+      "get": {
+        "summary": "Get public landing-page counters",
+        "tags": ["Public"],
+        "responses": { "200": { "description": "Public statistics" } }
+      }
+    },
+    "/api/contact": {
+      "post": {
+        "summary": "Submit a contact message",
+        "tags": ["Public"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "subject", "message"],
+                "properties": {
+                  "name": { "type": "string", "example": "Abebe Kebede" },
+                  "email": { "type": "string", "format": "email", "example": "abebe@example.com" },
+                  "phone": { "type": "string", "example": "+251911234567" },
+                  "subject": { "type": "string", "example": "Question about a property" },
+                  "message": { "type": "string", "example": "I would like more information about this listing." }
+                }
+              },
+              "/api/results": {
+                "get": {
+                  "summary": "Get public results overview",
+                  "tags": ["Public"],
+                  "responses": {
+                    "200": {
+                      "description": "Public property listings and non-sensitive summary counts"
+                    }
+                  }
+                }
+              },
+              "/api/admin/results": {
+                "get": {
+                  "summary": "Get full combined results overview",
+                  "tags": ["Admin"],
+                  "security": [{ "cookieAuth": [] }],
+                  "responses": {
+                    "200": {
+                      "description": "Properties, rental applications, contact messages and summary counts"
+                    }
+                  },
+                  "/api/news": {
+                    "get": {
+                      "summary": "List published news articles",
+                      "tags": ["Public"],
+                      "responses": { "200": { "description": "Published news articles" } }
+                    }
+                  },
+                  "/api/news/{slug}": {
+                    "get": {
+                      "summary": "Get a published news article",
+                      "tags": ["Public"],
+                      "parameters": [
+                        { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+                      ],
+                      "responses": {
+                        "200": { "description": "Published news article" },
+                        "404": { "description": "News article not found" }
+                      }
+                    }
+                  },
+                  "/api/admin/news": {
+                    "get": {
+                      "summary": "List all news articles",
+                      "tags": ["Admin"],
+                      "security": [{ "cookieAuth": [] }],
+                      "responses": { "200": { "description": "All news articles, including drafts" } }
+                    },
+                    "post": {
+                      "summary": "Create a news article",
+                      "tags": ["Admin"],
+                      "security": [{ "cookieAuth": [] }],
+                      "responses": { "201": { "description": "News article created" } }
+                    }
+                  },
+                  "/api/admin/news/{id}": {
+                    "put": {
+                      "summary": "Update a news article",
+                      "tags": ["Admin"],
+                      "security": [{ "cookieAuth": [] }],
+                      "responses": { "200": { "description": "News article updated" } }
+                    },
+                    "delete": {
+                      "summary": "Delete a news article",
+                      "tags": ["Admin"],
+                      "security": [{ "cookieAuth": [] }],
+                      "responses": { "204": { "description": "News article deleted" } }
+                    }
+                  },
+                  "/api/properties/{propertyId}/gallery": {
+                    "get": {
+                      "summary": "List photos in a property gallery",
+                      "tags": ["Properties"],
+                      "parameters": [
+                        { "name": "propertyId", "in": "path", "required": true, "schema": { "type": "string" } }
+                      ],
+                      "responses": { "200": { "description": "Property gallery photos" } }
+                    },
+                    "post": {
+                      "summary": "Add a photo to a property gallery",
+                      "tags": ["Properties"],
+                      "security": [{ "cookieAuth": [] }],
+                      "parameters": [
+                        { "name": "propertyId", "in": "path", "required": true, "schema": { "type": "string" } }
+                      ],
+                      "responses": { "201": { "description": "Photo added" } }
+                    }
+                  },
+                  "/api/properties/{propertyId}/gallery/reorder": {
+                    "put": {
+                      "summary": "Reorder property gallery photos",
+                      "tags": ["Properties"],
+                      "security": [{ "cookieAuth": [] }],
+                      "parameters": [
+                        { "name": "propertyId", "in": "path", "required": true, "schema": { "type": "string" } }
+                      ],
+                      "responses": { "200": { "description": "Gallery reordered" } }
+                    }
+                  },
+                  "/api/properties/{propertyId}/gallery/{photoId}": {
+                    "delete": {
+                      "summary": "Delete a property gallery photo",
+                      "tags": ["Properties"],
+                      "security": [{ "cookieAuth": [] }],
+                      "parameters": [
+                        { "name": "propertyId", "in": "path", "required": true, "schema": { "type": "string" } },
+                        { "name": "photoId", "in": "path", "required": true, "schema": { "type": "string" } }
+                      ],
+                      "responses": { "204": { "description": "Photo deleted" } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Contact message received" },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

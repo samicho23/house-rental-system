@@ -1,0 +1,22 @@
+# Production compose
+# Usage: JWT_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up -d
+services:
+  api:
+    build: .
+    container_name: faydarent-api
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: file:../db/custom.db
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    volumes:
+      - ./db:/app/db
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3001/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

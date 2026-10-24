@@ -1,0 +1,235 @@
+{
+  "info": {
+    "name": "FaydaRent API",
+    "description": "House and Apartment Rental System - REST API collection.\n\n1. Run POST /api/auth/login with a demo account.\n2. The session cookie (hrs_session) is stored automatically on the collection.\n3. Call the module endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" }
+  ],
+  "item": [
+    {
+      "name": "Health & Public",
+      "item": [
+        { "name": "Health check", "request": { "method": "GET", "url": "{{baseUrl}}/api/health" } },
+        { "name": "Public stats", "request": { "method": "GET", "url": "{{baseUrl}}/api/public/stats" } },
+        { "name": "API info", "request": { "method": "GET", "url": "{{baseUrl}}/api" } }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Fayda verify (FIN + consent)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fin\": \"XY9876543\",\n  \"consent\": true\n}" },
+            "url": "{{baseUrl}}/api/auth/fayda"
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"faydaId\": \"XY9876543\",\n  \"faydaVerified\": true,\n  \"email\": \"new@rental.et\",\n  \"phone\": \"+251911000000\",\n  \"password\": \"Str0ngPass!\",\n  \"firstName\": \"Abebe\",\n  \"lastName\": \"Kebede\",\n  \"role\": \"TENANT\",\n  \"city\": \"Addis Ababa\"\n}" },
+            "url": "{{baseUrl}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('login ok', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@rental.et\",\n  \"password\": \"Admin@123\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        { "name": "Me", "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/me" } },
+        { "name": "Logout", "request": { "method": "POST", "url": "{{baseUrl}}/api/auth/logout" } }
+      ]
+    },
+    {
+      "name": "Properties",
+      "item": [
+        {
+          "name": "Search listings",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?city=Bole&propertyType=APARTMENT&minPrice=&maxPrice=&bedrooms=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "properties"],
+              "query": [
+                { "key": "city", "value": "Bole" },
+                { "key": "propertyType", "value": "APARTMENT" },
+                { "key": "minPrice", "value": "" },
+                { "key": "maxPrice", "value": "" },
+                { "key": "bedrooms", "value": "" }
+              ]
+            }
+          }
+        },
+        { "name": "Property detail", "request": { "method": "GET", "url": "{{baseUrl}}/api/properties/:id", "description": "Replace :id with a property id" } },
+        {
+          "name": "Create listing (LANDLORD)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"3BR house, Ayat\",\n  \"description\": \"Spacious family home inside a gated compound with parking.\",\n  \"propertyType\": \"HOUSE\",\n  \"city\": \"Addis Ababa\",\n  \"subCity\": \"Yeka\",\n  \"price\": 45000,\n  \"bedrooms\": 3,\n  \"bathrooms\": 2,\n  \"furnished\": false,\n  \"hasParking\": true,\n  \"amenities\": [\"Compound\", \"Parking\", \"Water tank\"],\n  \"photos\": [],\n  \"status\": \"PUBLISHED\"\n}" },
+            "url": "{{baseUrl}}/api/properties"
+          }
+        },
+        { "name": "Update listing (owner/ADMIN)", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"price\": 47000\n}" }, "url": "{{baseUrl}}/api/properties/:id" } },
+        { "name": "Moderate listing (ADMIN)", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"approvalStatus\": \"APPROVED\"\n}" }, "url": "{{baseUrl}}/api/properties/:id" } },
+        { "name": "Delete listing", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/properties/:id" } }
+      ]
+    },
+    {
+      "name": "Applications",
+      "item": [
+        { "name": "List applications (role aware)", "request": { "method": "GET", "url": "{{baseUrl}}/api/applications" } },
+        {
+          "name": "Apply (TENANT)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"propertyId\": \"PROPERTY_ID\",\n  \"message\": \"I am interested, available from next month.\",\n  \"moveInDate\": \"2026-12-01\",\n  \"occupants\": 2,\n  \"phone\": \"+251911000000\"\n}" },
+            "url": "{{baseUrl}}/api/applications"
+          }
+        },
+        {
+          "name": "Decide (APPROVE creates lease)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"action\": \"APPROVE\",\n  \"decisionNote\": \"Welcome home\",\n  \"paymentDay\": 5\n}" },
+            "url": "{{baseUrl}}/api/applications/:id"
+          }
+        },
+        {
+          "name": "Decide (REJECT)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"action\": \"REJECT\",\n  \"decisionNote\": \"Rented to another applicant\"\n}" },
+            "url": "{{baseUrl}}/api/applications/:id"
+          }
+        },
+        {
+          "name": "Withdraw (TENANT)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"action\": \"WITHDRAW\"\n}" },
+            "url": "{{baseUrl}}/api/applications/:id"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leases & Payments",
+      "item": [
+        { "name": "Leases (role aware, balances)", "request": { "method": "GET", "url": "{{baseUrl}}/api/leases" } },
+        { "name": "Lease detail", "request": { "method": "GET", "url": "{{baseUrl}}/api/leases/:id" } },
+        {
+          "name": "End lease",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"ENDED\"\n}" },
+            "url": "{{baseUrl}}/api/leases/:id"
+          }
+        },
+        { "name": "Payment ledger", "request": { "method": "GET", "url": "{{baseUrl}}/api/payments" } },
+        {
+          "name": "Record payment (LANDLORD)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"leaseId\": \"LEASE_ID\",\n  \"amount\": 25000,\n  \"dueDate\": \"2026-11-05\",\n  \"method\": \"BANK_TRANSFER\",\n  \"status\": \"PENDING\"\n}" },
+            "url": "{{baseUrl}}/api/payments"
+          }
+        },
+        {
+          "name": "Mark payment paid",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"action\": \"MARK_PAID\",\n  \"method\": \"CASH\"\n}" },
+            "url": "{{baseUrl}}/api/payments/:id"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Maintenance",
+      "item": [
+        { "name": "List requests", "request": { "method": "GET", "url": "{{baseUrl}}/api/maintenance" } },
+        {
+          "name": "Report problem (TENANT)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"propertyId\": \"PROPERTY_ID\",\n  \"title\": \"Kitchen tap leaking\",\n  \"description\": \"The kitchen tap has been leaking since yesterday evening.\",\n  \"category\": \"PLUMBING\",\n  \"priority\": \"MEDIUM\"\n}" },
+            "url": "{{baseUrl}}/api/maintenance"
+          }
+        },
+        {
+          "name": "Update status (LANDLORD)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"response\": \"Plumber scheduled for Friday\"\n}" },
+            "url": "{{baseUrl}}/api/maintenance/:id"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        { "name": "List notifications", "request": { "method": "GET", "url": "{{baseUrl}}/api/notifications" } },
+        {
+          "name": "Mark read (one or all)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"id\": \"NOTIFICATION_ID\"\n}" },
+            "url": "{{baseUrl}}/api/notifications/read",
+            "description": "Send an empty body {} to mark ALL as read."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard & Admin",
+      "item": [
+        { "name": "Role dashboard", "request": { "method": "GET", "url": "{{baseUrl}}/api/dashboard" } },
+        { "name": "Admin reports", "request": { "method": "GET", "url": "{{baseUrl}}/api/admin/reports" } },
+        { "name": "Admin users", "request": { "method": "GET", "url": "{{baseUrl}}/api/admin/users?q=&role=" } },
+        {
+          "name": "Suspend / activate / set role",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"id\": \"USER_ID\",\n  \"action\": \"SUSPEND\"\n}" },
+            "url": "{{baseUrl}}/api/admin/users",
+            "description": "actions: SUSPEND | ACTIVATE | SET_ROLE (with \"role\": \"LANDLORD\")"
+          }
+        }
+      ]
+    }
+  ]
+}
